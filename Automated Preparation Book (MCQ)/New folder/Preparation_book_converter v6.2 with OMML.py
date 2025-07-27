@@ -1,0 +1,209 @@
+from docx import Document
+from docx.oxml.ns import qn
+from docx.oxml import parse_xml
+from docx.shared import Pt, RGBColor, Inches
+
+def main():
+    src = "AP_-_MCQ_Sheet_-_Class_6_-_Chapter_1.1^J_1.2^J_1.3^J_1.4^J_1.5^J_1.6_-_স্বাভাবিক_সংখ্যা_ও_ভগ্নাংশ.docx"
+    out = "Reformatted_MCQ_Sheet.docx"
+    doc = Document(src)
+    # Suppose you have already extracted MCQ blocks as a list of objects: mcqs
+
+    outdoc = Document()
+    section = outdoc.sections[0]
+    section.page_width = Inches(8.5)
+    section.page_height = Inches(10.65)
+    section.top_margin = Inches(0.5)
+    section.bottom_margin = Inches(0.3)
+    section.left_margin = Inches(0.8)
+    section.right_margin = Inches(0.6)
+    section.header_distance = Inches(0.6)
+    section.footer_distance = Inches(0.2)
+    sectPr = section._sectPr
+    cols = sectPr.xpath('./w:cols')[0]
+    cols.set(qn('w:num'), '2')  # Set to 2 columns
+
+    # For demo: just copy all paragraphs preserving equations and style
+    for para in doc.paragraphs:
+        # Example: for "উত্তর:" lines, color green and bold
+        if para.text.strip().startswith("উত্তর:"):
+            copy_paragraph_with_equations_and_style(para, outdoc, color_hex="#088565", bold=True)
+        else:
+            copy_paragraph_with_equations_and_style(para, outdoc)
+        # Optional: add blank lines or MCQ block logic as you need
+
+    outdoc.save(out)
+    print("Done! Output:", out)
+
+def copy_paragraph_with_equations_and_style(src_para, outdoc, font_name="Tiro Bangla", font_size=11, color_hex=None, bold=False):
+    from lxml import etree
+
+    para_xml = etree.tostring(src_para._element, encoding='unicode')
+    tree = etree.fromstring(para_xml.encode('utf-8'))
+    ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+          'm': 'http://schemas.openxmlformats.org/officeDocument/2006/math'}
+
+    out_para = outdoc.add_paragraph()
+    for node in tree.iterchildren():
+        if node.tag.endswith('r'):
+            texts = node.findall('.//w:t', namespaces=ns)
+            for t in texts:
+                run = out_para.add_run(t.text)
+                run.font.name = font_name
+                run.element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
+                run.font.size = Pt(font_size)
+                if color_hex:
+                    run.font.color.rgb = RGBColor.from_string(color_hex.replace("#", ""))
+                run.font.bold = bold
+        elif node.tag.endswith('oMath') or node.tag.endswith('oMathPara'):
+            omml_xml = etree.tostring(node, encoding='unicode')
+            omml_run = parse_xml(
+                '<w:r xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+                'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">' +
+                omml_xml +
+                '</w:r>'
+            )
+            out_para._p.append(omml_run)
+    p_format = out_para.paragraph_format
+    p_format.line_spacing = 1.3
+    p_format.space_before = Pt(0)
+    p_format.space_after = Pt(0)
+    return out_para
+
+def format_mcq(mcq, doc):
+    # Serial + Question + Reference (all in one line)
+    qline0, style0, src_para0 = mcq['question_lines_meta'][0]
+
+    # Create the paragraph with serial, question, and [reference] (if any)
+    qtext = f"{mcq['serial']}. {qline0}"
+    if mcq.get('reference'):
+        qtext += f" [{mcq['reference']}]"
+
+    q_para = doc.add_paragraph()
+    run = q_para.add_run(qtext)
+    run.font.name = "Tiro Bangla"
+    run.element.rPr.rFonts.set(qn('w:eastAsia'), 'Tiro Bangla')
+    run.font.size = Pt(11)
+
+    # Add any inline equations in the question line
+    from lxml import etree
+    para_xml = etree.tostring(src_para0._element, encoding='unicode')
+    tree = etree.fromstring(para_xml.encode('utf-8'))
+    ns = {'m': 'http://schemas.openxmlformats.org/officeDocument/2006/math'}
+    for node in tree.iterchildren():
+        if node.tag.endswith('oMath') or node.tag.endswith('oMathPara'):
+            omml_xml = etree.tostring(node, encoding='unicode')
+            omml_run = parse_xml(
+                '<w:r xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+                'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">' +
+                omml_xml +
+                '</w:r>'
+            )
+            q_para._p.append(omml_run)
+
+    # If there are extra lines in the question, add them as new paragraphs
+    for qline, style, src_para in mcq['question_lines_meta'][1:]:
+        if qline.strip():
+            copy_paragraph_with_equations_and_style(src_para, doc)
+
+    # Options: always two per line, with inline OMML
+    opts = []
+    for k in ['ক','খ','গ','ঘ']:
+        v = mcq['options'].get(k)
+        if v:
+            opt_text, src_para = v
+            opts.append((k, opt_text, src_para))
+        else:
+            opts.append((k, "", None))
+
+    # First line: ক, খ
+    opt_line1 = doc.add_paragraph()
+    for idx in [0, 1]:
+        label, opt_text, src_para = opts[idx]
+        opt_line1.add_run(f"{label}. ")
+        if src_para:
+            # Insert the full styled and equation-having option
+            from lxml import etree
+            para_xml = etree.tostring(src_para._element, encoding='unicode')
+            tree = etree.fromstring(para_xml.encode('utf-8'))
+            ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+                  'm': 'http://schemas.openxmlformats.org/officeDocument/2006/math'}
+            for node in tree.iterchildren():
+                if node.tag.endswith('r'):
+                    texts = node.findall('.//w:t', namespaces=ns)
+                    for t in texts:
+                        run = opt_line1.add_run(t.text)
+                        run.font.name = "Tiro Bangla"
+                        run.element.rPr.rFonts.set(qn('w:eastAsia'), "Tiro Bangla")
+                        run.font.size = Pt(11)
+                elif node.tag.endswith('oMath') or node.tag.endswith('oMathPara'):
+                    omml_xml = etree.tostring(node, encoding='unicode')
+                    omml_run = parse_xml(
+                        '<w:r xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+                        'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">' +
+                        omml_xml +
+                        '</w:r>'
+                    )
+                    opt_line1._p.append(omml_run)
+        else:
+            run = opt_line1.add_run(opt_text)
+            run.font.name = "Tiro Bangla"
+            run.element.rPr.rFonts.set(qn('w:eastAsia'), "Tiro Bangla")
+            run.font.size = Pt(11)
+        opt_line1.add_run("\t\t")  # Tab space between options
+
+    # Second line: গ, ঘ
+    opt_line2 = doc.add_paragraph()
+    for idx in [2, 3]:
+        label, opt_text, src_para = opts[idx]
+        opt_line2.add_run(f"{label}. ")
+        if src_para:
+            from lxml import etree
+            para_xml = etree.tostring(src_para._element, encoding='unicode')
+            tree = etree.fromstring(para_xml.encode('utf-8'))
+            ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+                  'm': 'http://schemas.openxmlformats.org/officeDocument/2006/math'}
+            for node in tree.iterchildren():
+                if node.tag.endswith('r'):
+                    texts = node.findall('.//w:t', namespaces=ns)
+                    for t in texts:
+                        run = opt_line2.add_run(t.text)
+                        run.font.name = "Tiro Bangla"
+                        run.element.rPr.rFonts.set(qn('w:eastAsia'), "Tiro Bangla")
+                        run.font.size = Pt(11)
+                elif node.tag.endswith('oMath') or node.tag.endswith('oMathPara'):
+                    omml_xml = etree.tostring(node, encoding='unicode')
+                    omml_run = parse_xml(
+                        '<w:r xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+                        'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">' +
+                        omml_xml +
+                        '</w:r>'
+                    )
+                    opt_line2._p.append(omml_run)
+        else:
+            run = opt_line2.add_run(opt_text)
+            run.font.name = "Tiro Bangla"
+            run.element.rPr.rFonts.set(qn('w:eastAsia'), "Tiro Bangla")
+            run.font.size = Pt(11)
+        opt_line2.add_run("\t\t")
+
+    # Answer
+    ans = mcq.get('answer', '')
+    ans_text = mcq.get('answer_text', '')
+    ans_para = doc.add_paragraph()
+    run = ans_para.add_run("উত্তর:")
+    run.font.name = 'Tiro Bangla'
+    run.element.rPr.rFonts.set(qn('w:eastAsia'), 'Tiro Bangla')
+    run.font.size = Pt(11)
+    run.font.bold = True
+    run.font.color.rgb = RGBColor(0x08, 0x85, 0x65)  # #088565
+    run2 = ans_para.add_run(f" {ans}. {ans_text}")
+    run2.font.name = 'Tiro Bangla'
+    run2.element.rPr.rFonts.set(qn('w:eastAsia'), 'Tiro Bangla')
+    run2.font.size = Pt(11)
+    # Blank line for separation
+    doc.add_paragraph('')
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,17 @@
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\bin\Debug\net9.0\MyMCQFormatter.exe
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\bin\Debug\net9.0\MyMCQFormatter.deps.json
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\bin\Debug\net9.0\MyMCQFormatter.runtimeconfig.json
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\bin\Debug\net9.0\MyMCQFormatter.dll
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\bin\Debug\net9.0\MyMCQFormatter.pdb
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\bin\Debug\net9.0\Microsoft.Office.Interop.Word.dll
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\obj\Debug\net9.0\MyMCQFormatter.csproj.AssemblyReference.cache
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\obj\Debug\net9.0\MyMCQFormatter.GeneratedMSBuildEditorConfig.editorconfig
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\obj\Debug\net9.0\MyMCQFormatter.AssemblyInfoInputs.cache
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\obj\Debug\net9.0\MyMCQFormatter.AssemblyInfo.cs
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\obj\Debug\net9.0\MyMCQFormatter.csproj.CoreCompileInputs.cache
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\obj\Debug\net9.0\MyMCQFor.179CBCAB.Up2Date
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\obj\Debug\net9.0\MyMCQFormatter.dll
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\obj\Debug\net9.0\refint\MyMCQFormatter.dll
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\obj\Debug\net9.0\MyMCQFormatter.pdb
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\obj\Debug\net9.0\MyMCQFormatter.genruntimeconfig.cache
+D:\Office Files\Developer\Automated Docx\MyMCQFormatter\obj\Debug\net9.0\ref\MyMCQFormatter.dll
